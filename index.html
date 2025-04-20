@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>🔥 Best Roguelike Game Ever!</title>
+  <title>🔥 Best Turnbased Game Ever!</title>
   <style>
     body {
       background-color: #0f0f0f;
@@ -78,9 +78,6 @@
     .emoji {
       font-size: 4rem;
     }
-    #enemyName {
-      font-size: 24px;
-    }
   </style>
 </head>
 <body>
@@ -106,7 +103,7 @@
       <p id="playerStats"></p>
 
       <h3 class="emoji" id="bossEmoji">👾 Enemy</h3>
-      <p id="enemyName"></p>
+      <p id="enemyName"></p> <!-- Enemy name below the emoji -->
       <div class="health-bar"><div class="health-fill boss-fill" id="bossHealthBar"></div></div>
       <p id="bossStats"></p>
     </div>
@@ -122,9 +119,9 @@
 
     <div class="upgrade-select hidden" id="upgradeSelect">
       <p>🏱 Choose your upgrade:</p>
-      <button onclick="applyUpgrade('opt1')" id="opt1">???</button>
-      <button onclick="applyUpgrade('opt2')" id="opt2">???</button>
-      <button onclick="applyUpgrade('opt3')" id="opt3">???</button>
+      <button onclick="applyUpgrade('opt1')" id="opt1">❤️+? Health</button>
+      <button onclick="applyUpgrade('opt2')" id="opt2">💪+? Damage</button>
+      <button onclick="applyUpgrade('opt3')" id="opt3">⚖️+? HP & Damage</button>
     </div>
 
     <div class="center">
@@ -138,20 +135,21 @@
     }
 
     const enemies = [
-      { name: "Alien", emoji: "👾", baseMaxHp: 50, baseDmg: 5 },
-      { name: "Chinese Guy", emoji: "👨‍💻", baseMaxHp: 40, baseDmg: 6 },
-      { name: "Angry Book", emoji: "📚", baseMaxHp: 30, baseDmg: 4 },
-      { name: "Dragon", emoji: "🐉", baseMaxHp: 70, baseDmg: 10 },
-      { name: "Goblin", emoji: "👺", baseMaxHp: 40, baseDmg: 5 },
-      { name: "Cyclops", emoji: "👁️", baseMaxHp: 60, baseDmg: 8 },
-      { name: "Zombie", emoji: "🧟", baseMaxHp: 25, baseDmg: 3 },
-      { name: "Robot", emoji: "🤖", baseMaxHp: 50, baseDmg: 9 },
-      { name: "Vampire", emoji: "🧛", baseMaxHp: 55, baseDmg: 7 },
-      { name: "Ghost", emoji: "👻", baseMaxHp: 30, baseDmg: 4 },
-      { name: "Mutant", emoji: "🦸", baseMaxHp: 70, baseDmg: 12 }
+      { name: "Alien", emoji: "👾", baseMaxHp: 100, baseDmg: 10 },
+      { name: "Chinese Guy", emoji: "👨‍💻", baseMaxHp: 80, baseDmg: 12 },
+      { name: "Angry Book", emoji: "📚", baseMaxHp: 60, baseDmg: 6 },
+      { name: "Dragon", emoji: "🐉", baseMaxHp: 150, baseDmg: 20 },
+      { name: "Goblin", emoji: "👺", baseMaxHp: 70, baseDmg: 8 },
+      { name: "Cyclops", emoji: "👁️", baseMaxHp: 120, baseDmg: 15 },
+      { name: "Zombie", emoji: "🧟", baseMaxHp: 50, baseDmg: 5 },
+      { name: "Robot", emoji: "🤖", baseMaxHp: 90, baseDmg: 18 },
+      { name: "Vampire", emoji: "🧛", baseMaxHp: 110, baseDmg: 14 },
+      { name: "Ghost", emoji: "👻", baseMaxHp: 60, baseDmg: 7 },
+      { name: "Mutant", emoji: "🦸", baseMaxHp: 130, baseDmg: 25 }
     ];
 
     let player, enemy, room = 1, canAct = true;
+    let upgradeValues = {}; // Store the upgrade values to ensure consistency
 
     function startGame() {
       const playerNameInput = document.getElementById('playerNameInput');
@@ -178,13 +176,14 @@
 
     function newEnemy() {
       enemy = enemies[rand(0, enemies.length - 1)];
-      enemy.maxHp = enemy.baseMaxHp + room * rand(10, 20);
-      enemy.dmg = enemy.baseDmg + room * rand(2, 5);
+      // Upgrade enemy stats per room
+      enemy.maxHp = enemy.baseMaxHp + room * rand(10, 20); // Increase health per room
+      enemy.dmg = enemy.baseDmg + room * rand(2, 5); // Increase damage per room
       enemy.hp = enemy.maxHp;
 
       document.getElementById('roomNum').innerText = room;
       document.getElementById('bossEmoji').innerText = enemy.emoji;
-      document.getElementById('enemyName').innerText = enemy.name;
+      document.getElementById('enemyName').innerText = enemy.name; // Display the enemy name below the emoji
       document.getElementById('bossStats').innerText = `HP: ${enemy.hp} | DMG: ${enemy.dmg}`;
       enableButtons(true);
       canAct = true;
@@ -194,8 +193,12 @@
       if (player && enemy) {
         document.getElementById('playerMaxHp').innerText = player.maxHp;
         document.getElementById('playerDmg').innerText = player.dmg;
+        
+        // Update health bar widths
         document.getElementById('playerHealthBar').style.width = Math.max((player.hp / player.maxHp) * 100, 0) + '%';
         document.getElementById('bossHealthBar').style.width = Math.max((enemy.hp / enemy.maxHp) * 100, 0) + '%';
+        
+        // Update health text
         document.getElementById('playerStats').innerText = `HP: ${Math.max(player.hp, 0)} | DMG: ${player.dmg}`;
         document.getElementById('bossStats').innerText = `HP: ${Math.max(enemy.hp, 0)} | DMG: ${enemy.dmg}`;
       }
@@ -226,10 +229,11 @@
           break;
       }
 
+      // Ensure health never goes below 0
       player.hp = Math.max(player.hp, 0);
       enemy.hp = Math.max(enemy.hp, 0);
 
-      updateStats();
+      updateStats();  // Update health bars and stats after player action
 
       if (enemy.hp <= 0) {
         endBattle();
@@ -253,25 +257,28 @@
       player.hp -= damage;
       logLine(`${enemy.name} attacks for ${damage} damage!`);
 
+      // Ensure health never goes below 0
       player.hp = Math.max(player.hp, 0);
 
       if (player.hp <= 0) {
         endGame();
       } else {
-        enableButtons(true);
-        canAct = true;
+        setTimeout(() => {
+          enableButtons(true);
+          canAct = true;
+        }, 1000);
       }
 
-      updateStats();
+      updateStats();  // Update health bars and stats after enemy action
     }
 
     function endBattle() {
       logLine(`🏆 Enemy defeated! Choose an upgrade:`);
       enableButtons(false);
       const upgrades = [
-        { type: 'hp', label: `❤️ Max HP +${rand(10, 50)}` },
-        { type: 'dmg', label: `💪 Damage +${rand(1, 20)}` },
-        { type: 'both', label: `⚖️ HP +${rand(5, 25)} & Damage +${rand(1, 8)}` }
+        { type: 'hp', label: `+? Health` },
+        { type: 'dmg', label: `+? Damage` },
+        { type: 'both', label: `+? HP & Damage` }
       ];
       document.getElementById('opt1').innerText = upgrades[0].label;
       document.getElementById('opt1').setAttribute('onclick', `applyUpgrade('${upgrades[0].type}')`);
@@ -283,16 +290,22 @@
     }
 
     function applyUpgrade(type) {
+      let upgradeAmount; // Declare a variable to store the upgrade amount
+
       switch(type) {
         case 'hp':
-          player.maxHp += rand(10, 50);
+          upgradeAmount = rand(10, 50);
+          player.maxHp += upgradeAmount;
           break;
         case 'dmg':
-          player.dmg += rand(1, 8);
+          upgradeAmount = rand(1, 20);
+          player.dmg += upgradeAmount;
           break;
         case 'both':
-          player.maxHp += rand(5, 25);
-          player.dmg += rand(1, 4);
+          const hpUpgrade = rand(5, 25);
+          const dmgUpgrade = rand(1, 8);
+          player.maxHp += hpUpgrade;
+          player.dmg += dmgUpgrade;
           break;
       }
 
@@ -306,20 +319,24 @@
     }
 
     function logLine(message) {
-      const battleLog = document.getElementById('battleLog');
-      battleLog.innerText += `${message}\n`;
-      battleLog.scrollTop = battleLog.scrollHeight;
+      const logDiv = document.getElementById('battleLog');
+      logDiv.innerText += message + '\n';
+      logDiv.scrollTop = logDiv.scrollHeight;
     }
 
     function enableButtons(enable) {
       const buttons = document.querySelectorAll('.actions button');
-      buttons.forEach(button => button.disabled = !enable);
+      buttons.forEach(button => {
+        button.disabled = !enable;
+      });
     }
 
     function endGame() {
-      logLine(`💀 ${player.name} has been defeated!`);
-      document.getElementById("restartBtn").style.display = "block";
+      alert(`Game over! You reached room ${room}.`);
+      document.getElementById('restartBtn').style.display = 'block';
+      document.getElementById('gameArea').classList.add('hidden');
     }
   </script>
 </body>
 </html>
+
