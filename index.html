@@ -103,7 +103,7 @@
       <p id="playerStats"></p>
 
       <h3 class="emoji" id="bossEmoji">👾 Enemy</h3>
-      <p id="enemyName"></p>
+      <p id="enemyName"></p> <!-- Enemy name below the emoji -->
       <div class="health-bar"><div class="health-fill boss-fill" id="bossHealthBar"></div></div>
       <p id="bossStats"></p>
     </div>
@@ -149,8 +149,11 @@
     ];
 
     let player, enemy, room = 1, canAct = true;
-    let upgradeValues = {};
-    let highScore = localStorage.getItem("highScore") ? parseInt(localStorage.getItem("highScore")) : 0;
+    let upgradeValues = {}; // Store the upgrade values to ensure consistency
+
+    // Load high score from localStorage
+    let highScore = localStorage.getItem('highScore') ? parseInt(localStorage.getItem('highScore')) : 0;
+    document.getElementById('highScore').innerText = highScore;
 
     function startGame() {
       const playerNameInput = document.getElementById('playerNameInput');
@@ -177,13 +180,14 @@
 
     function newEnemy() {
       enemy = enemies[rand(0, enemies.length - 1)];
-      enemy.maxHp = enemy.baseMaxHp + room * rand(10, 20);
-      enemy.dmg = enemy.baseDmg + room * rand(2, 5);
+      // Upgrade enemy stats per room
+      enemy.maxHp = enemy.baseMaxHp + room * rand(10, 20); // Increase health per room
+      enemy.dmg = enemy.baseDmg + room * rand(2, 5); // Increase damage per room
       enemy.hp = enemy.maxHp;
 
       document.getElementById('roomNum').innerText = room;
       document.getElementById('bossEmoji').innerText = enemy.emoji;
-      document.getElementById('enemyName').innerText = enemy.name;
+      document.getElementById('enemyName').innerText = enemy.name; // Display the enemy name below the emoji
       document.getElementById('bossStats').innerText = `HP: ${enemy.hp} | DMG: ${enemy.dmg}`;
       enableButtons(true);
       canAct = true;
@@ -193,15 +197,15 @@
       if (player && enemy) {
         document.getElementById('playerMaxHp').innerText = player.maxHp;
         document.getElementById('playerDmg').innerText = player.dmg;
-
+        
+        // Update health bar widths
         document.getElementById('playerHealthBar').style.width = Math.max((player.hp / player.maxHp) * 100, 0) + '%';
         document.getElementById('bossHealthBar').style.width = Math.max((enemy.hp / enemy.maxHp) * 100, 0) + '%';
         
+        // Update health text
         document.getElementById('playerStats').innerText = `HP: ${Math.max(player.hp, 0)} | DMG: ${player.dmg}`;
         document.getElementById('bossStats').innerText = `HP: ${Math.max(enemy.hp, 0)} | DMG: ${enemy.dmg}`;
       }
-
-      document.getElementById('highScore').innerText = highScore;
     }
 
     function takeAction(action) {
@@ -229,10 +233,11 @@
           break;
       }
 
+      // Ensure health never goes below 0
       player.hp = Math.max(player.hp, 0);
       enemy.hp = Math.max(enemy.hp, 0);
 
-      updateStats();
+      updateStats();  // Update health bars and stats after player action
 
       if (enemy.hp <= 0) {
         endBattle();
@@ -256,6 +261,7 @@
       player.hp -= damage;
       logLine(`${enemy.name} attacks for ${damage} damage!`);
 
+      // Ensure health never goes below 0
       player.hp = Math.max(player.hp, 0);
 
       if (player.hp <= 0) {
@@ -267,16 +273,16 @@
         }, 1000);
       }
 
-      updateStats();
+      updateStats();  // Update health bars and stats after enemy action
     }
 
     function endBattle() {
       logLine(`🏆 Enemy defeated! Choose an upgrade:`);
       enableButtons(false);
       const upgrades = [
-        { type: 'hp', label: `+? Health` },
-        { type: 'dmg', label: `+? Damage` },
-        { type: 'both', label: `+? HP & Damage` }
+        { type: 'hp', label: '❤️+? Health' },
+        { type: 'dmg', label: '💪+? Damage' },
+        { type: 'both', label: '⚖️+? HP & Damage' }
       ];
       document.getElementById('opt1').innerText = upgrades[0].label;
       document.getElementById('opt1').setAttribute('onclick', `applyUpgrade('${upgrades[0].type}')`);
@@ -288,7 +294,7 @@
     }
 
     function applyUpgrade(type) {
-      let upgradeAmount;
+      let upgradeAmount; // Declare a variable to store the upgrade amount
 
       switch(type) {
         case 'hp':
@@ -296,43 +302,55 @@
           player.maxHp += upgradeAmount;
           break;
         case 'dmg':
-          upgradeAmount = rand(3, 10);
+          upgradeAmount = rand(1, 20);
           player.dmg += upgradeAmount;
           break;
         case 'both':
-          upgradeAmount = rand(5, 15);
-          player.maxHp += upgradeAmount;
-          player.dmg += upgradeAmount;
+          const hpUpgrade = rand(5, 25);
+          const dmgUpgrade = rand(1, 8);
+          player.maxHp += hpUpgrade;
+          player.dmg += dmgUpgrade;
           break;
       }
 
-      logLine(`You upgraded ${type} by ${upgradeAmount}!`);
+      player.hp = player.maxHp;
+      document.getElementById("playerMaxHp").innerText = player.maxHp;
+      document.getElementById("playerDmg").innerText = player.dmg;
+      document.getElementById("upgradeSelect").classList.add("hidden");
+
+      // Heal player to full health after each room
+      player.hp = player.maxHp;
+
       room++;
+
+      // Update high score if needed
+      if (room > highScore) {
+        highScore = room;
+        localStorage.setItem('highScore', highScore);
+        document.getElementById('highScore').innerText = highScore;
+      }
+
       newEnemy();
       updateStats();
-      document.getElementById('upgradeSelect').classList.add("hidden");
-      enableButtons(true);
     }
 
     function logLine(message) {
-      const log = document.getElementById("battleLog");
-      log.innerText += message + '\n';
-      log.scrollTop = log.scrollHeight;
+      const logDiv = document.getElementById('battleLog');
+      logDiv.innerText += message + '\n';
+      logDiv.scrollTop = logDiv.scrollHeight;
     }
 
     function enableButtons(enable) {
       const buttons = document.querySelectorAll('.actions button');
-      buttons.forEach(btn => btn.disabled = !enable);
+      buttons.forEach(button => {
+        button.disabled = !enable;
+      });
     }
 
     function endGame() {
-      logLine(`💀 Game over! You reached room ${room}.`);
-      if (room > highScore) {
-        highScore = room;
-        localStorage.setItem("highScore", highScore);
-        logLine(`🎉 New high score: ${highScore}`);
-      }
-      document.getElementById('restartBtn').style.display = 'inline-block';
+      alert(`Game over! You reached room ${room}.`);
+      document.getElementById('restartBtn').style.display = 'block';
+      document.getElementById('gameArea').classList.add('hidden');
     }
   </script>
 </body>
