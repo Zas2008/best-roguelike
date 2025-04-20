@@ -270,8 +270,8 @@
       enableButtons(false);
       const upgrades = [
         { type: 'hp', label: `❤️ Max HP +${rand(10, 50)}` },
-        { type: 'dmg', label: `💪 Damage +${rand(1, 8)}` },
-        { type: 'both', label: `⚖️ HP +${rand(5, 25)} & Damage +${rand(1, 4)}` }
+        { type: 'dmg', label: `💪 Damage +${rand(1, 20)}` },
+        { type: 'both', label: `⚖️ HP +${rand(5, 25)} & Damage +${rand(1, 8)}` }
       ];
       document.getElementById('opt1').innerText = upgrades[0].label;
       document.getElementById('opt1').setAttribute('onclick', `applyUpgrade('${upgrades[0].type}')`);
