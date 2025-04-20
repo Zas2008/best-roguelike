@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🔥 Best Turnbased Game Ever!</title>
+  <style>
+    body {
+      background-color: #0f0f0f;
+      color: #f5f5f5;
+      font-family: 'Courier New', monospace;
+      padding: 30px;
+    }
+    h1, h2, h3 {
+      text-align: center;
+      color: #ff6f61;
+    }
+    .center { text-align: center; }
+    .hidden { display: none; }
+    .health-bar {
+      background-color: #333;
+      border-radius: 8px;
+      height: 24px;
+      width: 100%;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .health-fill {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+    .player-fill { background-color: #4caf50; }
+    .boss-fill { background-color: #f44336; }
+    .stats, .meta, .upgrade-select {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .actions {
+      text-align: center;
+      margin: 20px 0;
+    }
+    .actions button, .upgrade-select button, .restart-btn {
+      font-size: 16px;
+      margin: 10px;
+      padding: 12px 20px;
+      background-color: #222;
+      color: #fff;
+      border: 2px solid #ff6f61;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .actions button:hover, .upgrade-select button:hover, .restart-btn:hover {
+      background-color: #333;
+    }
+    .log {
+      background-color: #111;
+      border: 1px solid #666;
+      border-radius: 8px;
+      padding: 15px;
+      height: 200px;
+      overflow-y: auto;
+      white-space: pre-line;
+      margin-top: 20px;
+    }
+    #playerNameInput {
+      font-size: 18px;
+      padding: 10px;
+      border: 2px solid #ff6f61;
+      border-radius: 8px;
+      background-color: #222;
+      color: #fff;
+      margin-bottom: 10px;
+      width: 250px;
+    }
+    #restartBtn {
+      display: none;
+      margin-top: 20px;
+    }
+    .emoji {
+      font-size: 4rem;
+    }
+    #enemyName {
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔥 Best Turnbased Game Ever!</h1>
+  <div class="center">
+    <input type="text" id="playerNameInput" placeholder="Enter your name..." />
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <div id="gameArea" class="hidden">
+    <h2>🧱 Room <span id="roomNum">1</span></h2>
+    <div class="meta">
+      <p><strong>Name:</strong> <span id="playerName"></span> |
+         <strong>Max HP:</strong> <span id="playerMaxHp"></span> |
+         <strong>Damage Bonus:</strong> <span id="playerDmg"></span> |
+         <strong>High Score:</strong> <span id="highScore">0</span></p>
+    </div>
+
+    <div class="stats">
+      <h3 class="emoji">🤹 <span id="displayName"></span></h3>
+      <div class="health-bar"><div class="health-fill player-fill" id="playerHealthBar"></div></div>
+      <p id="playerStats"></p>
+
+      <h3 class="emoji" id="bossEmoji">👾 Enemy</h3>
+      <p id="enemyName"></p>
+      <div class="health-bar"><div class="health-fill boss-fill" id="bossHealthBar"></div></div>
+      <p id="bossStats"></p>
+    </div>
+
+    <div class="actions">
+      <button onclick="takeAction('strike')" title="Deal light damage to enemy" disabled>💥 Strike</button>
+      <button onclick="takeAction('heal')" title="Restore 15-75 HP" disabled>💖 Heal</button>
+      <button onclick="takeAction('guard')" title="Take half damage next turn" disabled>🛡️ Guard</button>
+      <button onclick="takeAction('gamble')" title="Risky damage or self-hit" disabled>🎲 Gamble</button>
+    </div>
+
+    <div class="log" id="battleLog"></div>
+
+    <div class="upgrade-select hidden" id="upgradeSelect">
+      <p>🏱 Choose your upgrade:</p>
+      <button onclick="applyUpgrade('opt1')" id="opt1">???</button>
+      <button onclick="applyUpgrade('opt2')" id="opt2">???</button>
+      <button onclick="applyUpgrade('opt3')" id="opt3">???</button>
+    </div>
+
+    <div class="center">
+      <button id="restartBtn" class="restart-btn" onclick="location.reload()">🔄 Restart</button>
+    </div>
+  </div>
+
+  <script>
+    function rand(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    const enemies = [
+      { name: "Alien", emoji: "👾", baseMaxHp: 50, baseDmg: 5 },
+      { name: "Chinese Guy", emoji: "👨‍💻", baseMaxHp: 40, baseDmg: 6 },
+      { name: "Angry Book", emoji: "📚", baseMaxHp: 30, baseDmg: 4 },
+      { name: "Dragon", emoji: "🐉", baseMaxHp: 70, baseDmg: 10 },
+      { name: "Goblin", emoji: "👺", baseMaxHp: 40, baseDmg: 5 },
+      { name: "Cyclops", emoji: "👁️", baseMaxHp: 60, baseDmg: 8 },
+      { name: "Zombie", emoji: "🧟", baseMaxHp: 25, baseDmg: 3 },
+      { name: "Robot", emoji: "🤖", baseMaxHp: 50, baseDmg: 9 },
+      { name: "Vampire", emoji: "🧛", baseMaxHp: 55, baseDmg: 7 },
+      { name: "Ghost", emoji: "👻", baseMaxHp: 30, baseDmg: 4 },
+      { name: "Mutant", emoji: "🦸", baseMaxHp: 70, baseDmg: 12 }
+    ];
+
+    let player, enemy, room = 1, canAct = true;
+
+    function startGame() {
+      const playerNameInput = document.getElementById('playerNameInput');
+      const playerName = playerNameInput.value.trim();
+      if (!playerName) {
+        alert('Please enter a name!');
+        return;
+      }
+
+      document.getElementById('playerName').innerText = playerName;
+      document.getElementById('displayName').innerText = playerName;
+      document.getElementById('gameArea').classList.remove('hidden');
+      player = {
+        name: playerName,
+        maxHp: 100,
+        hp: 100,
+        dmg: 10,
+        guarding: false
+      };
+
+      newEnemy();
+      updateStats();
+    }
+
+    function newEnemy() {
+      enemy = enemies[rand(0, enemies.length - 1)];
+      enemy.maxHp = enemy.baseMaxHp + room * rand(10, 20);
+      enemy.dmg = enemy.baseDmg + room * rand(2, 5);
+      enemy.hp = enemy.maxHp;
+
+      document.getElementById('roomNum').innerText = room;
+      document.getElementById('bossEmoji').innerText = enemy.emoji;
+      document.getElementById('enemyName').innerText = enemy.name;
+      document.getElementById('bossStats').innerText = `HP: ${enemy.hp} | DMG: ${enemy.dmg}`;
+      enableButtons(true);
+      canAct = true;
+    }
+
+    function updateStats() {
+      if (player && enemy) {
+        document.getElementById('playerMaxHp').innerText = player.maxHp;
+        document.getElementById('playerDmg').innerText = player.dmg;
+        document.getElementById('playerHealthBar').style.width = Math.max((player.hp / player.maxHp) * 100, 0) + '%';
+        document.getElementById('bossHealthBar').style.width = Math.max((enemy.hp / enemy.maxHp) * 100, 0) + '%';
+        document.getElementById('playerStats').innerText = `HP: ${Math.max(player.hp, 0)} | DMG: ${player.dmg}`;
+        document.getElementById('bossStats').innerText = `HP: ${Math.max(enemy.hp, 0)} | DMG: ${enemy.dmg}`;
+      }
+    }
+
+    function takeAction(action) {
+      if (!canAct) return;
+
+      canAct = false;
+      switch (action) {
+        case 'strike':
+          enemy.hp -= player.dmg;
+          logLine(`${player.name} strikes for ${player.dmg} damage!`);
+          break;
+        case 'heal':
+          const healAmount = rand(15, 75);
+          player.hp = Math.min(player.hp + healAmount, player.maxHp);
+          logLine(`${player.name} heals for ${healAmount} HP!`);
+          break;
+        case 'guard':
+          player.guarding = true;
+          logLine(`${player.name} is guarding next turn!`);
+          break;
+        case 'gamble':
+          let gambleOutcome = rand(0, 1) === 0 ? rand(1, 30) : -rand(1, 30);
+          player.hp += gambleOutcome;
+          logLine(`${player.name} gambles and ${gambleOutcome >= 0 ? 'gains' : 'loses'} ${Math.abs(gambleOutcome)} HP!`);
+          break;
+      }
+
+      player.hp = Math.max(player.hp, 0);
+      enemy.hp = Math.max(enemy.hp, 0);
+
+      updateStats();
+
+      if (enemy.hp <= 0) {
+        endBattle();
+      } else {
+        setTimeout(enemyTurn, 1000);
+      }
+    }
+
+    function enemyTurn() {
+      if (player.hp <= 0) {
+        endGame();
+        return;
+      }
+
+      let damage = enemy.dmg;
+      if (player.guarding) {
+        damage = Math.floor(damage / 2);
+        player.guarding = false;
+      }
+
+      player.hp -= damage;
+      logLine(`${enemy.name} attacks for ${damage} damage!`);
+
+      player.hp = Math.max(player.hp, 0);
+
+      if (player.hp <= 0) {
+        endGame();
+      } else {
+        enableButtons(true);
+        canAct = true;
+      }
+
+      updateStats();
+    }
+
+    function endBattle() {
+      logLine(`🏆 Enemy defeated! Choose an upgrade:`);
+      enableButtons(false);
+      const upgrades = [
+        { type: 'hp', label: `❤️ Max HP +${rand(10, 50)}` },
+        { type: 'dmg', label: `💪 Damage +${rand(1, 8)}` },
+        { type: 'both', label: `⚖️ HP +${rand(5, 25)} & Damage +${rand(1, 4)}` }
+      ];
+      document.getElementById('opt1').innerText = upgrades[0].label;
+      document.getElementById('opt1').setAttribute('onclick', `applyUpgrade('${upgrades[0].type}')`);
+      document.getElementById('opt2').innerText = upgrades[1].label;
+      document.getElementById('opt2').setAttribute('onclick', `applyUpgrade('${upgrades[1].type}')`);
+      document.getElementById('opt3').innerText = upgrades[2].label;
+      document.getElementById('opt3').setAttribute('onclick', `applyUpgrade('${upgrades[2].type}')`);
+      document.getElementById('upgradeSelect').classList.remove("hidden");
+    }
+
+    function applyUpgrade(type) {
+      switch(type) {
+        case 'hp':
+          player.maxHp += rand(10, 50);
+          break;
+        case 'dmg':
+          player.dmg += rand(1, 8);
+          break;
+        case 'both':
+          player.maxHp += rand(5, 25);
+          player.dmg += rand(1, 4);
+          break;
+      }
+
+      player.hp = player.maxHp;
+      document.getElementById("playerMaxHp").innerText = player.maxHp;
+      document.getElementById("playerDmg").innerText = player.dmg;
+      document.getElementById("upgradeSelect").classList.add("hidden");
+      room++;
+      newEnemy();
+      updateStats();
+    }
+
+    function logLine(message) {
+      const battleLog = document.getElementById('battleLog');
+      battleLog.innerText += `${message}\n`;
+      battleLog.scrollTop = battleLog.scrollHeight;
+    }
+
+    function enableButtons(enable) {
+      const buttons = document.querySelectorAll('.actions button');
+      buttons.forEach(button => button.disabled = !enable);
+    }
+
+    function endGame() {
+      logLine(`💀 ${player.name} has been defeated!`);
+      document.getElementById("restartBtn").style.display = "block";
+    }
+  </script>
+</body>
+</html>
